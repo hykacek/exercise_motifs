@@ -1,4 +1,6 @@
-from itertools import count
+import itertools
+from random import random
+from Bio import SeqIO
 
 
 lecture_dna = [
@@ -122,4 +124,61 @@ class MotifProfile:
 #bio.pseudocounts = 1
 #print(bio.consensus)     # ATGCGTA
 #print(bio.pwm["A"])      # the same numbers as your profile.ppm["A"]
+
+#TASK 3
+from Bio import SeqIO
+sequences = [str(record.seq) for record in SeqIO.parse("planted_motif.fasta", "fasta")]
+
+class MotifFinder:
+    def __init__(self, sequences, l, seed=None):
+        self.sequences = sequences
+        self.l = l
+        self.rng = random.Random(seed)
+        self.windows = []
+        for seq in sequences:
+            seq_windows = [seq[i : i + l] for i in range(len(seq) - l + 1)]
+            self.windows.append(seq_windows)
+
+    def total_distance(self, motifs):
+        total_dist = 0
+        for seq_windows in self.windows:
+            min_dist = min(hamming_distance(pattern, w) for w in seq_windows)
+            total_dist += min_dist
+        return total_dist
+    
+    def median_string(self):
+        min_distance = float('inf')
+        best_pattern = None
+        for i in itertools.product("ACGT", repeat=self.l):
+            pattern = ''.join(i)
+            distance = self.total_distance(pattern)
+            if distance < min_distance:
+                min_distance = distance
+                best_pattern = pattern
+        return best_pattern, min_distance
+
+def randomized_search(self):
+    current_motifs = [self.rng.choice(self.windows[i]) for i in range(len(self.sequences))]
+    score = self.score(current_motifs)
+    profile = MotifProfile(current_motifs, pseudocount=1)
+    while True:
+        new_motifs = [profile.most_probable_lmer(seq) for seq in self.sequences]
+        new_score = self.score(new_motifs)
+        if new_score < score:
+            current_motifs = new_motifs
+            score = new_score
+            profile = MotifProfile(current_motifs, pseudocount=1)
+        else:
+            break
+    return current_motifs, score
+
+def best_of(self, runs):
+        best_motifs = None
+        best_score = -1
+        for _ in range(runs):
+            motifs, sc = self.randomized_search()
+            if sc > best_score:
+                best_score = sc
+                best_motifs = motifs
+        return best_motifs, best_score
 
